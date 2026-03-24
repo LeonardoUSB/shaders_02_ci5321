@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rasengan Workshop</title>
+    <style>
+        /* Estilos básicos para que el canvas ocupe todo */
+        body { margin: 0; background-color: #000; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Contenedor de botones */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.6);
+            color: #00d4ff;
+            border: 1px solid #00d4ff;
+            border-radius: 4px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 12px;
+        }
+
+        button:hover {
+            background: #00d4ff;
+            color: #000;
+            box-shadow: 0 0 15px #00d4ff;
+        }
+
+        button.active {
+            background: #ffffff;
+            color: #000;
+            border-color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <button id="btn-phase-1" class="active">Fase 1: Compresión</button>
+        <button id="btn-phase-2">Fase 2: Rotación</button>
+        <button id="btn-phase-3">Fase 3: Rasengan Final</button>
+    </div>
+
+    <canvas id="main-canvas"></canvas>
+
+    <script type="module" src="/src/main.ts"></script>
+    
+</body>
+</html>
