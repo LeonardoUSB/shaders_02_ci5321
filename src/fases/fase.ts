@@ -5,7 +5,7 @@ export interface RasenganPhase {
     container: THREE.Group; 
     
     // Lo que pasa en cada frame (animación)
-    update(time: number): void; 
+    update(time: number, camera: THREE.PerspectiveCamera): void; 
     
     // Limpieza de memoria (importante para que no se trabe el PC)
     dispose(): void; 
