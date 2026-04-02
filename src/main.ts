@@ -12,6 +12,7 @@ import { Giro } from './fases/7_giro/giro.ts';
 import { Giro_Animado } from './fases/8_giro_animado/giro.ts';
 import { Ruido } from './fases/9_ruido/ruido.ts';
 import { ChakraFull } from './fases/10_todos/todos.ts';
+import { Humo } from './fases/11_humo/humo.ts';
 
 
 
@@ -125,6 +126,11 @@ class RasenganEngine {
         document.getElementById('btn-phase-10')?.addEventListener('click', () => {
             this.loadPhase(new ChakraFull());
             this.updateActiveButton('btn-phase-10');
+        });
+
+        document.getElementById('btn-phase-11')?.addEventListener('click', () => {
+            this.loadPhase(new Humo());
+            this.updateActiveButton('btn-phase-11');
         });
     }
 
