@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import type { RasenganPhase } from '../fase';
-import vertexShader from './vertex.glsl?raw';
-import fragmentShader from './fragment.glsl?raw';
+import vertexShader from './vertex.glsl';
+import fragmentShader from './fragment.glsl';
 
 export class Espirales implements RasenganPhase{
     public container: THREE.Group;
@@ -12,49 +12,43 @@ export class Espirales implements RasenganPhase{
     private gui: GUI;
 
     // Referencias visuales añadidas
-    private gridHelper: THREE.GridHelper;
-    private referenceCircle: THREE.LineLoop;
+    private sphereHelper: THREE.Mesh;
+    private axisHelper: THREE.AxesHelper;
 
     private params = {
-        speed: 5.0,
+        speed: 1.5,
         attraction: 0.5,
-        pointSize: 15.0,
-        color: '#44aaff'
+        pointSize: 30.0,
+        color: '#44aaff',
+        showHelpers: true 
     };
 
     constructor() {
         this.container = new THREE.Group();
     
-        // --- REFERENCIAS VISUALES ---
-        
-        // A. Cuadrícula de suelo (Grid)
-        // Tamaño 10x10, con 10 divisiones. Color gris oscuro.
-        this.gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
-        this.gridHelper.position.y = -2; // La bajamos un poco para que no choque con la espiral
-        this.container.add(this.gridHelper);
+        //  REFERENCIAS VISUALES (Helpers) 
+                
+        this.axisHelper = new THREE.AxesHelper(3);
+        this.container.add(this.axisHelper);
 
-        // B. Círculo de referencia (Esqueleto)
-        // Creamos un anillo de líneas en el plano XY con radio 2 (el radio inicial de la espiral)
-        const circleGeometry = new THREE.CircleGeometry(2, 64); 
-        // Eliminamos el vértice central para que solo quede el borde
-        circleGeometry.deleteAttribute('normal');
-        circleGeometry.deleteAttribute('uv');
-        // Usamos solo los vértices del borde
-        const edgeVertices = circleGeometry.attributes.position.array.slice(3); // Saltamos el centro (0,0,0)
-        const edgeGeometry = new THREE.BufferGeometry();
-        edgeGeometry.setAttribute('position', new THREE.BufferAttribute(edgeVertices, 3));
-        
-        const circleMaterial = new THREE.LineBasicMaterial({ color: 0x444444, transparent: true, opacity: 0.5 });
-        this.referenceCircle = new THREE.LineLoop(edgeGeometry, circleMaterial);
-        this.container.add(this.referenceCircle);
+        //Cargamos un shader sencillo ya hecho por three para la referencia de la esfera
+        const sphereGeo = new THREE.SphereGeometry(2.0, 32, 32); 
+        const sphereMat = new THREE.MeshBasicMaterial({ 
+            color: 0x444444, 
+            wireframe: true, 
+            transparent: true, 
+            opacity: 0.2 
+        });
+        this.sphereHelper = new THREE.Mesh(sphereGeo, sphereMat);
+        this.container.add(this.sphereHelper);
 
-        // --- SHADER ---
+       //  SHADER
 
-        // 1. GEOMETRÍA: Definimos 12 partículas (una por cada subplano principal)
+        // Definimos 20 partículas (4 por cada subplano)
         const count = 20;
         this.geometry = new THREE.BufferGeometry();
         
-        // Creamos un ID único para cada partícula (0 a 11)
+        // Creamos un ID único para cada partícula (0 a 19)
         const pIds = new Float32Array(count);
         for (let i = 0; i < count; i++) {
             pIds[i] = i;
@@ -64,13 +58,13 @@ export class Espirales implements RasenganPhase{
         this.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
         this.geometry.setAttribute('aId', new THREE.BufferAttribute(pIds, 1));
 
-        // 2. MATERIAL: Enviamos los parámetros a la GPU
+        
         this.material = new THREE.RawShaderMaterial({
             vertexShader,
             fragmentShader,
             glslVersion: THREE.GLSL3,
             transparent: true,
-            blending: THREE.AdditiveBlending, // Efecto de brillo acumulativo
+            blending: THREE.AdditiveBlending, // Hace que las particulas brillen mas cuando estan juntas
             uniforms: {
                 u_time: { value: 0.0 },
                 u_speed: { value: this.params.speed },
@@ -86,15 +80,34 @@ export class Espirales implements RasenganPhase{
         this.points = new THREE.Points(this.geometry, this.material);
         this.container.add(this.points);
 
-        this.gui = new GUI({ title: 'Configuración: EspiralesPhase' });
+        this.gui = new GUI({ title: 'Configuración' });
         this.setupUI();
 
     }
 
     private setupUI() {
-        this.gui.add(this.params, 'speed', 0, 20).name('Velocidad').onChange(v => this.material.uniforms.u_speed.value = v);
-        this.gui.add(this.params, 'attraction', 0.1, 2.0).name('Convergencia').onChange(v => this.material.uniforms.u_attraction.value = v);
-        this.gui.add(this.params, 'pointSize', 1, 50).name('Grosor').onChange(v => this.material.uniforms.u_pointSize.value = v);
+        const spiralFolder = this.gui.addFolder('Espiral');
+        spiralFolder.add(this.params, 'speed', 0, 20).name('Velocidad').onChange(v => {
+            this.material.uniforms.u_speed.value = v;
+        });
+        spiralFolder.add(this.params, 'attraction', 0.1, 2.0).name('Atracción').onChange(v => {
+            this.material.uniforms.u_attraction.value = v;
+        });
+        spiralFolder.open();
+
+        const particleFolder = this.gui.addFolder('Partícula');
+        particleFolder.add(this.params, 'pointSize', 1, 100).name('Tamaño').onChange(v => {
+            this.material.uniforms.u_pointSize.value = v;
+        });
+        particleFolder.addColor(this.params, 'color').name('Color').onChange(v => {
+            this.material.uniforms.u_color.value.set(v);
+        });
+        particleFolder.open();
+        this.gui.add(this.params, 'showHelpers').name('Mostrar Guías').onChange(v => {
+            this.sphereHelper.visible = v;
+            this.axisHelper.visible = v;
+        
+        });
     }
 
     public update(time: number, camera: THREE.PerspectiveCamera) {
@@ -107,5 +120,11 @@ export class Espirales implements RasenganPhase{
         this.gui.destroy();
         this.geometry.dispose();
         this.material.dispose();
+        // Liberamos también los helpers
+        if (this.sphereHelper) {
+            this.sphereHelper.geometry.dispose();
+            (this.sphereHelper.material as THREE.Material).dispose();
+        }
+        this.axisHelper.dispose();
     }
 }

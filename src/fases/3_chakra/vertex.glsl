@@ -1,46 +1,42 @@
 
 in float aId; 
+in float aOffset;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
-
 uniform float u_time;
 uniform float u_speed;
 uniform float u_attraction;
 uniform float u_pointSize;
 
 void main() {
+    // Las particulas usan el mismo progreso global pero con un offset para que aparezcan a destiempo
+    float progress = mod(u_time * u_attraction + aOffset, 1.0);
+        
     
-    // Las partículas usan el mismo progreso global
-    float progress = mod(u_time * u_attraction, 1.0);
-    float PI = 3.14159265;
-    // Mismo radio en el mismo instante
     float r = 2.0 * (1.0 - progress);
-
-    // Angulos depende del progreso y no del tiempo
-    float angle = progress * 2.0 * PI * u_speed; 
     
+    float angle = (progress * 6.2831) * u_speed; 
 
     float s = sin(angle) * r;
     float c = cos(angle) * r;
 
     vec3 newPos;
-
-    // Asignaciones de particulas por plano
     int id = int(aId);
+
     switch(id) {
         //  PLANO XZ 
-        case 0: newPos = vec3(c, 0.0, s);   break; 
-        case 1: newPos = vec3(-c, 0.0, -s);  break; 
-        case 2: newPos = vec3(-s, 0.0, c);   break; 
-        case 3: newPos = vec3(s, 0.0, -c);   break; 
+        case 0: newPos = vec3(c, 0.0, s);   break; // +X
+        case 1: newPos = vec3(-c, 0.0, -s);  break; // -X
+        case 2: newPos = vec3(-s, 0.0, c);   break; // +Z
+        case 3: newPos = vec3(s, 0.0, -c);   break; // -Z
 
         //  PLANO YZ 
-        case 4: newPos = vec3(0.0, c, s);   break; 
-        case 5: newPos = vec3(0.0, -c, -s);  break; 
-        case 6: newPos = vec3(0.0, -s, c);   break; 
-        case 7: newPos = vec3(0.0, s, -c);   break; 
+        case 4: newPos = vec3(0.0, c, s);   break; // +Y
+        case 5: newPos = vec3(0.0, -c, -s);  break; // -Y
+        case 6: newPos = vec3(0.0, -s, c);   break; // +Z (en este plano)
+        case 7: newPos = vec3(0.0, s, -c);   break; // -Z (en este plano)
 
         //  PLANO XY 
         case 8:  newPos = vec3(c, s, 0.0);   break; 
@@ -64,7 +60,9 @@ void main() {
 
     }
 
-    // Transformacion Estandar
+    
     gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(newPos, 1.0);
     gl_PointSize = u_pointSize;
 }
+
+    

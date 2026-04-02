@@ -1,21 +1,32 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import type { RasenganPhase } from './fases/fase';
-import { spiralPhase } from './fases/1_espiral/espiral';
-// Importamos las otras fases por si decides activarlas luego
-import { Espirales } from './fases/2_espirales/espirales';
-import { ChaosPhase } from './fases/final/final';
+import type { RasenganPhase } from './fases/fase.ts';
+//Fases
+import { Espiral } from './fases/1_espiral/espiral.ts';
+import { Espirales } from './fases/2_espirales/espirales.ts';
+import { Chakra } from './fases/3_chakra/chakra.ts';
+import { Espiral_Circular } from './fases/4_espiral_circular/espiral_circular.ts';
+import { Movimiento } from './fases/5_movimiento/movimiento.ts';
+import { Espirales_Circulares } from './fases/6_espirales_circulares/espirales_circulares.ts';
+import { Giro } from './fases/7_giro/giro.ts';
+import { Giro_Animado } from './fases/8_giro_animado/giro.ts';
+import { Ruido } from './fases/9_ruido/ruido.ts';
+import { ChakraFull } from './fases/10_todos/todos.ts';
 
+
+
+//Esta clase simplemente es andamiaje para que los shaders de todas las fases se puedan mostrar en el mismo esquema
+//No posee shaders internos
 class RasenganEngine {
     private scene: THREE.Scene;
     private camera: THREE.PerspectiveCamera;
     private renderer: THREE.WebGLRenderer;
-    private controls: OrbitControls; // Añadido para interactividad
+    private controls: OrbitControls; 
     private currentPhase: RasenganPhase | null = null;
     private startTime: number;
 
     constructor() {
-        // 1. Configuración de Escena y Cámara
+        // Configuracion de Escena y Camara
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color('#050505');
 
@@ -32,7 +43,7 @@ class RasenganEngine {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-        // 3. OrbitControls (Esencial para moverte alrededor de la partícula)
+        //OrbitControls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.05;
@@ -40,15 +51,20 @@ class RasenganEngine {
         this.startTime = Date.now();
         this.setupEventListeners();
         this.render();
+
+        //Precargamos la fase final
+        this.loadPhase(new ChakraFull());
+        this.updateActiveButton('btn-phase-10');
     }
 
+    //Funcion que carga los shaders
     public loadPhase(phase: RasenganPhase) {
         // Limpiamos la fase anterior si existe
         if (this.currentPhase) {
             this.scene.remove(this.currentPhase.container);
             this.currentPhase.dispose();
         }
-
+        //Cargar el shader
         this.currentPhase = phase;
         this.scene.add(this.currentPhase.container);
     }
@@ -62,8 +78,7 @@ class RasenganEngine {
 
         // --- CONEXIÓN DE BOTONES ---
         document.getElementById('btn-phase-1')?.addEventListener('click', () => {
-            // Ahora cargamos la versión de "una sola partícula"
-            this.loadPhase(new spiralPhase());
+            this.loadPhase(new Espiral());
             this.updateActiveButton('btn-phase-1');
         });
 
@@ -73,8 +88,43 @@ class RasenganEngine {
         });
 
         document.getElementById('btn-phase-3')?.addEventListener('click', () => {
-            this.loadPhase(new ChaosPhase());
+            this.loadPhase(new Chakra());
             this.updateActiveButton('btn-phase-3');
+        });
+
+        document.getElementById('btn-phase-4')?.addEventListener('click', () => {
+            this.loadPhase(new Espiral_Circular());
+            this.updateActiveButton('btn-phase-4');
+        });
+
+        document.getElementById('btn-phase-5')?.addEventListener('click', () => {
+            this.loadPhase(new Movimiento());
+            this.updateActiveButton('btn-phase-5');
+        });
+
+        document.getElementById('btn-phase-6')?.addEventListener('click', () => {
+            this.loadPhase(new Espirales_Circulares());
+            this.updateActiveButton('btn-phase-6');
+        });
+
+        document.getElementById('btn-phase-7')?.addEventListener('click', () => {
+            this.loadPhase(new Giro());
+            this.updateActiveButton('btn-phase-7');
+        });
+
+        document.getElementById('btn-phase-8')?.addEventListener('click', () => {
+            this.loadPhase(new Giro_Animado());
+            this.updateActiveButton('btn-phase-8');
+        });
+
+        document.getElementById('btn-phase-9')?.addEventListener('click', () => {
+            this.loadPhase(new Ruido());
+            this.updateActiveButton('btn-phase-9');
+        });
+
+        document.getElementById('btn-phase-10')?.addEventListener('click', () => {
+            this.loadPhase(new ChakraFull());
+            this.updateActiveButton('btn-phase-10');
         });
     }
 
@@ -83,17 +133,14 @@ class RasenganEngine {
         document.getElementById(id)?.classList.add('active');
     }
 
+    //Manejo del tiempo en las animaciones de forma global
     private render = () => {
-        // Calculamos el tiempo transcurrido en segundos
-        const time = (Date.now() - this.startTime) / 1000;
-        
-        requestAnimationFrame(this.render);
 
-        // Actualizamos controles de cámara (OrbitControls)
+        const time = (Date.now() - this.startTime) / 1000; 
+        requestAnimationFrame(this.render); 
         this.controls.update();
 
         if (this.currentPhase) {
-            // CAMBIO CLAVE: Enviamos tiempo Y cámara a la fase
             this.currentPhase.update(time, this.camera);
         }
 

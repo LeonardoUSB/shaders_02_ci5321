@@ -4,56 +4,76 @@ import type { RasenganPhase } from '../fase';
 import vertexShader from './vertex.glsl';
 import fragmentShader from './fragment.glsl';
 
-export class Espiral implements RasenganPhase {
+export class Giro implements RasenganPhase {
     public container: THREE.Group;
     private geometry: THREE.BufferGeometry;
     private material: THREE.RawShaderMaterial;
     private points: THREE.Points;
     private gui: GUI;
-
-    // Referencias visuales para facilitar la visualizacion de los shaders
-    private sphereHelper: THREE.Mesh;
-    private axisHelper: THREE.AxesHelper;
+    private sphereHelper: THREE.Mesh; // Esfera de alambre
+    private axisHelper: THREE.AxesHelper; // Ejes X, Y, Z
 
     private params = {
-        speed: 5.0,
-        attraction: 0.5,
+        speed: 10.0,      // Cantidad de giros de la espiral
+        attraction: 0.2,   // Velocidad del viaje A -> B
         pointSize: 20.0,
-        color: '#00ccff',
-        showHelpers: true 
+        color: '#44aaff',
+        showHelper: true
     };
 
     constructor() {
         this.container = new THREE.Group();
 
-        //  REFERENCIAS VISUALES (Helpers) 
+        //  REFERENCIAS VISUALES (HELPERS) 
         
-        this.axisHelper = new THREE.AxesHelper(3);
+        
+        this.axisHelper = new THREE.AxesHelper(3); // Tamaño 3
         this.container.add(this.axisHelper);
 
-        //Cargamos un shader sencillo ya hecho por three para la referencia de la esfera
-        const sphereGeo = new THREE.SphereGeometry(2.0, 32, 32); 
+        
+        const sphereGeo = new THREE.SphereGeometry(2.0, 16, 12); 
         const sphereMat = new THREE.MeshBasicMaterial({ 
             color: 0x444444, 
             wireframe: true, 
             transparent: true, 
-            opacity: 0.2 
+            opacity: 0.3 
         });
         this.sphereHelper = new THREE.Mesh(sphereGeo, sphereMat);
         this.container.add(this.sphereHelper);
 
-
-        // Shader
         
-        this.geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array([0, 0, 0]); 
-        this.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
+        const axesCount = 10;
+        const particlesPerAxis = 8000; 
+        const count = axesCount * particlesPerAxis;
+
+        const positions = new Float32Array(count * 3);
+        const ids = new Float32Array(count);
+        const offsets = new Float32Array(count);
+
+        for (let i = 0; i < axesCount; i++) {
+            for (let j = 0; j < particlesPerAxis; j++) {
+                const index = i * particlesPerAxis + j;
+                ids[index] = i; 
+                
+                offsets[index] = j / particlesPerAxis; 
+            }
+        }
+
+        this.geometry = new THREE.BufferGeometry();
+        
+        this.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        this.geometry.setAttribute('aId', new THREE.BufferAttribute(ids, 1));
+        this.geometry.setAttribute('aOffset', new THREE.BufferAttribute(offsets, 1));
+
+        
         this.material = new THREE.RawShaderMaterial({
             vertexShader,
             fragmentShader,
             glslVersion: THREE.GLSL3,
             transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
             uniforms: {
                 u_time: { value: 0.0 },
                 u_speed: { value: this.params.speed },
@@ -69,14 +89,11 @@ export class Espiral implements RasenganPhase {
         this.points = new THREE.Points(this.geometry, this.material);
         this.container.add(this.points);
 
-        //  GUI 
-        this.gui = new GUI({ title: 'Configuración' });
+        this.gui = new GUI({ title: 'Control Viajera' });
         this.setupUI();
     }
 
-    private setupUI() {
-        
-
+     private setupUI() {
         const spiralFolder = this.gui.addFolder('Espiral');
         spiralFolder.add(this.params, 'speed', 0, 20).name('Velocidad').onChange(v => {
             this.material.uniforms.u_speed.value = v;
@@ -94,8 +111,7 @@ export class Espiral implements RasenganPhase {
             this.material.uniforms.u_color.value.set(v);
         });
         particleFolder.open();
-        
-        this.gui.add(this.params, 'showHelpers').name('Mostrar Guías').onChange(v => {
+        this.gui.add(this.params, 'showHelper').name('Mostrar Guías').onChange(v => {
             this.sphereHelper.visible = v;
             this.axisHelper.visible = v;
         
@@ -112,7 +128,6 @@ export class Espiral implements RasenganPhase {
         this.gui.destroy();
         this.geometry.dispose();
         this.material.dispose();
-        // Liberamos también los helpers
         if (this.sphereHelper) {
             this.sphereHelper.geometry.dispose();
             (this.sphereHelper.material as THREE.Material).dispose();
