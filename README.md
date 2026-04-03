@@ -10,7 +10,7 @@ Se implementan dos shaders con ayuda de la libreria Three. El primero es un mani
 
 ## Ejecucion 
 
-Para arrancar el programa y observar los tres shaders desarrollados solo es necesario ejecutar los siguientes comandos.
+Para arrancar el programa y observar los shaders desarrollados solo es necesario ejecutar los siguientes comandos.
 
 ```bash
 npm install
